@@ -27,7 +27,7 @@ fn main() -> Result<()> {
     env_logger::init();
     let opt = Opt::from_args();
 
-    debug!("Options: {:?}", opt);
+    debug!("options: {:?}", opt);
     let encode_str = match (opt.input, opt.clipboard) {
         (Some(e), None) => Ok(String::from(&e)),
         (None, Some(_)) => read_clipboard(),
@@ -35,7 +35,7 @@ fn main() -> Result<()> {
         (None, None) => read_stdin(),
     }?;
 
-    debug!("Generate QR for: {}", encode_str);
+    debug!("encode data: {}", encode_str);
     let qr = QrCode::new(&encode_str)?;
 
     let image = qr
@@ -46,7 +46,7 @@ fn main() -> Result<()> {
     let width = image.width();
     let height = image.height();
 
-    debug!("QR Image: {}x{}", width, height);
+    debug!("QR image dimensions: {}x{}", width, height);
 
     let mut buffer = Vec::<u32>::new();
     for pixel in image.pixels() {
@@ -67,7 +67,7 @@ fn main() -> Result<()> {
         topmost: true,
     };
 
-    debug!("Creating window with options: {:?}", window_options);
+    debug!("window options: {:?}", window_options);
 
     let mut window = Window::new(
         &format!("QR - {}", encode_str),
