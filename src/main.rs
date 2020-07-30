@@ -32,7 +32,7 @@ fn main() -> Result<()> {
         (Some(e), None) => Ok(String::from(&e)),
         (None, Some(_)) => read_clipboard(),
         (Some(_), Some(_)) => Err(anyhow!("Invalid input arguments.")),
-        (None, None) => Ok(read_stdin()),
+        (None, None) => read_stdin(),
     }?;
 
     debug!("Generate QR for: {}", encode_str);
@@ -91,19 +91,17 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn read_clipboard() -> anyhow::Result<String> {
+fn read_clipboard() -> Result<String> {
     let mut ctx: ClipboardContext =
         ClipboardProvider::new().map_err(|_| anyhow!("Couldn't get clipboard context"))?;
     ctx.get_contents()
         .map_err(|_| anyhow!("Couldn't get clipboard contents"))
 }
 
-fn read_stdin() -> String {
+fn read_stdin() -> Result<String> {
     let mut buffer = String::new();
 
-    // NOTE: If couldn't read from stdin it's fine. Just return
-    // empty string in that case.
-    io::stdin().read_to_string(&mut buffer).ok();
+    io::stdin().read_to_string(&mut buffer)?;
 
-    buffer
+    Ok(buffer)
 }
