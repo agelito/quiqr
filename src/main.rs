@@ -1,70 +1,101 @@
-use structopt::StructOpt;
-use std::io::{self, Read};
-use std::convert::TryInto;
+use anyhow::Result;
+use clipboard::{ClipboardContext, ClipboardProvider};
+use image::Luma;
+use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use qrcode::QrCode;
-use image::Rgba;
-use minifb::{Window, WindowOptions, Key};
+use std::io::{self, Read};
+use structopt::StructOpt;
 
-const WIDTH: u32 = 260;
-const HEIGHT: u32 = 260;
+#[macro_use]
+extern crate log;
+
+#[macro_use]
+extern crate anyhow;
+
+const MAX_DIM_W: u32 = 360;
+const MAX_DIM_H: u32 = 360;
 
 #[derive(StructOpt, Debug)]
 struct Opt {
     #[structopt(short = "e")]
     input: Option<String>,
+    #[structopt(short = "c", long = "clipboard")]
+    clipboard: Option<Option<bool>>,
 }
 
-fn main() {
+fn main() -> Result<()> {
+    env_logger::init();
     let opt = Opt::from_args();
 
-    let encode_str = match opt.input {
-        Some(e) => String::from(&e),
-        None => read_stdin(),
-    };
+    debug!("Options: {:?}", opt);
+    let encode_str = match (opt.input, opt.clipboard) {
+        (Some(e), None) => Ok(String::from(&e)),
+        (None, Some(_)) => read_clipboard(),
+        (Some(_), Some(_)) => Err(anyhow!("Invalid input arguments.")),
+        (None, None) => Ok(read_stdin()),
+    }?;
 
-    let qr = QrCode::new(&encode_str)
-        .expect("Couldn't create QR code from input.");
+    debug!("Generate QR for: {}", encode_str);
+    let qr = QrCode::new(&encode_str)?;
 
-    let image = qr.render::<Rgba<u8>>()
-        .max_dimensions(WIDTH, HEIGHT)
+    let image = qr
+        .render::<Luma<u8>>()
+        .max_dimensions(MAX_DIM_W, MAX_DIM_H)
         .build();
 
-    image.save("out.png").expect("Couldn't save image.");
+    let width = image.width();
+    let height = image.height();
 
-    let raw_image_bytes = image.into_raw();
+    debug!("QR Image: {}x{}", width, height);
 
     let mut buffer = Vec::<u32>::new();
-
-    let mut index = 0;
-    while index < raw_image_bytes.len() {
-
-        let bytes = &raw_image_bytes[index..index + 4];
-        let bytes_array: [u8; 4] = 
-            bytes.try_into().expect("Couldn't convert byte array");
-        let color: u32 = u32::from_ne_bytes(bytes_array);
+    for pixel in image.pixels() {
+        let lum = pixel[0];
+        let bytes: [u8; 4] = [lum, lum, lum, 255];
+        let color: u32 = u32::from_ne_bytes(bytes);
 
         buffer.push(color);
-
-        index += 4;
     }
 
-    assert_eq!((WIDTH * HEIGHT * 4) as usize, raw_image_bytes.len());
-    assert_eq!((WIDTH * HEIGHT) as usize, buffer.len());
+    let window_options = WindowOptions {
+        borderless: true,
+        resize: false,
+        scale: Scale::X1,
+        scale_mode: ScaleMode::AspectRatioStretch,
+        title: false,
+        transparency: false,
+        topmost: true,
+    };
 
-    let mut window = Window::new(&format!("QR - {}", encode_str), WIDTH as usize, HEIGHT as usize, WindowOptions::default())
-        .expect("Couldn't create window.");
+    debug!("Creating window with options: {:?}", window_options);
+
+    let mut window = Window::new(
+        &format!("QR - {}", encode_str),
+        width as usize,
+        height as usize,
+        window_options,
+    )?;
 
     window.limit_update_rate(Some(std::time::Duration::from_millis(16)));
 
     while window.is_open() {
-
         if window.is_key_down(Key::Escape) || window.is_key_down(Key::Q) {
             break;
         }
 
-        window.update_with_buffer(buffer.as_slice(), WIDTH as usize, HEIGHT as usize)
+        window
+            .update_with_buffer(buffer.as_slice(), width as usize, height as usize)
             .expect("Couldn't present image buffer.");
     }
+
+    Ok(())
+}
+
+fn read_clipboard() -> anyhow::Result<String> {
+    let mut ctx: ClipboardContext =
+        ClipboardProvider::new().map_err(|_| anyhow!("Couldn't get clipboard context"))?;
+    ctx.get_contents()
+        .map_err(|_| anyhow!("Couldn't get clipboard contents"))
 }
 
 fn read_stdin() -> String {
