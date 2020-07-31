@@ -6,6 +6,7 @@ use image::Luma;
 use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 use qrcode::QrCode;
 use std::io::{self, Read};
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[macro_use]
@@ -23,6 +24,8 @@ struct Opt {
     input: Option<String>,
     #[structopt(short = "c", long = "clipboard")]
     clipboard: Option<Option<bool>>,
+    #[structopt(short = "s", long= "save-file", parse(from_os_str))]
+    save_image: Option<PathBuf>,
 }
 
 fn main() -> Result<()> {
@@ -49,6 +52,10 @@ fn main() -> Result<()> {
     let height = image.height();
 
     debug!("QR image dimensions: {}x{}", width, height);
+
+    if let Some(save_path) = opt.save_image {
+        image.save(save_path)?;
+    }
 
     let mut buffer = Vec::<u32>::new();
     for pixel in image.pixels() {
