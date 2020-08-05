@@ -1,9 +1,16 @@
 [package]
 name = "quiqr"
 version = "0.1.0"
-authors = ["Axel Wettervik <axel@calmid.com>"]
 edition = "2018"
 build = "build.rs"
+license-file = "LICENSE"
+readme = "README.md"
+authors = ["Axel Wettervik <axel.wettervik@gmail.com>"]
+description = "A tool for quickly generating a QR code and displaying it on screen."
+homepage = "https://github.com/agelito/quiqr"
+repository = "https://github.com/agelito/quiqr"
+keywords = ["QR", "Productivity", "Tool", "Utility"]
+categories = ["multimedia::images", "visualization"]
 
 [package.metadata.winres]
 OriginalFilename = "QUIQR.EXE"
