@@ -1,5 +1,5 @@
 # quiqr
-Quiqr is a tool for quickly generating a QR code from text and display then display the generated QR code on screen.
+Quiqr is a tool for quickly generating a QR code from text and then display the generated QR code on screen.
 
 ## Usage
 Quiqr can display QR codes coming from various input sources. But it can only have one input source selected. The options are:
