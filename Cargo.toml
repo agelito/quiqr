@@ -3,6 +3,7 @@ name = "quiqr"
 version = "0.1.0"
 edition = "2018"
 build = "build.rs"
+license = "MIT"
 license-file = "LICENSE"
 readme = "README.md"
 authors = ["Axel Wettervik <axel.wettervik@gmail.com>"]
