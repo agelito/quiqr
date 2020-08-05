@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 
 use anyhow::Result;
 use clipboard::{ClipboardContext, ClipboardProvider};
@@ -20,11 +20,26 @@ const MAX_DIM_H: u32 = 360;
 
 #[derive(StructOpt, Debug)]
 struct Opt {
-    #[structopt(short = "e")]
+    #[structopt(short = "e", long = "encode", help = "Display QR code from text.")]
     input: Option<String>,
-    #[structopt(short = "c", long = "clipboard")]
-    clipboard: Option<Option<bool>>,
-    #[structopt(short = "s", long= "save-file", parse(from_os_str))]
+    #[structopt(
+        short = "c",
+        long = "clipboard",
+        help = "Display QR code from clipboard contents."
+    )]
+    clipboard: bool,
+    #[structopt(
+        short = "s",
+        long = "stdin",
+        help = "Display QR code from stdin contents."
+    )]
+    stdin: bool,
+    #[structopt(
+        short = "w",
+        long = "write-file",
+        help = "Write resulting QR code to image file.",
+        parse(from_os_str)
+    )]
     save_image: Option<PathBuf>,
 }
 
@@ -33,11 +48,13 @@ fn main() -> Result<()> {
     let opt = Opt::from_args();
 
     debug!("options: {:?}", opt);
-    let encode_str = match (opt.input, opt.clipboard) {
-        (Some(e), None) => Ok(String::from(&e)),
-        (None, Some(_)) => read_clipboard(),
-        (Some(_), Some(_)) => Err(anyhow!("Invalid input arguments.")),
-        (None, None) => read_stdin(),
+    let encode_str = match (opt.input, opt.clipboard, opt.stdin) {
+        (Some(e), false, false) => Ok(String::from(&e)),
+        (None, true, false) => read_clipboard(),
+        (None, false, true) => read_stdin(),
+        _ => Err(anyhow!(
+            "Please select one of `encode`, `clipboard`, or `stdin` options."
+        )),
     }?;
 
     debug!("encode data: {}", encode_str);
